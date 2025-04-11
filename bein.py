@@ -1,26 +1,17 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
-
-# حذفنا الاستيراد من init لأنه غير ضروري في هذه الحالة
-
 import requests
 import re
 import io
 import os
 import sys
-import json
-from time import sleep, strftime
-from requests.adapters import HTTPAdapter
 from datetime import datetime, timedelta
 
-EPG_ROOT = '.'  # مكان حفظ bein.xml
+EPG_ROOT = '.'  # مكان حفظ bein.xml في نفس مجلد السكربت
 
 print('**************BEIN SPORTS EPG******************')
 sys.stdout.flush()
 
 
 def bein():
-
     channels_found = []
     for i in range(0, 3):
         week = (datetime.today() + timedelta(days=i)).strftime('%Y-%m-%d')
@@ -55,7 +46,7 @@ def bein():
                         epg += 2 * ' ' + f'<programme start="{starttime} +0300" stop="{endtime} +0300" channel="{ch.replace("_Digital_Mono", "").replace("_DIGITAL_Mono", "").replace("-1", "")}">\n'
                         epg += 4 * ' ' + f'<title lang="en">{live}{title_.replace("&", "and").strip()} - {form_.replace("2014", "2021")}</title>\n'
                         epg += 4 * ' ' + f'<desc lang="ar">{des.replace("- ", "").replace("&", "and")}</desc>\n  </programme>\r'
-                        with io.open(EPG_ROOT + '/bein.xml', "a", encoding='UTF-8')as f:
+                        with io.open(os.path.join(EPG_ROOT, 'bein.xml'), "a", encoding='UTF-8') as f:
                             f.write(epg)
                 except:
                     break
@@ -68,7 +59,7 @@ def bein():
                     break
 
     if len(channels_found) > 0:
-        channels_found = sorted([ch.replace('_Digital_Mono', '').replace('_DIGITAL_Mono', '').replace('-1', '') for ch in list(dict.fromkeys(channels_found))])
+        channels_found = sorted([ch.replace('_Digital_Mono', '').replace('-1', '') for ch in list(dict.fromkeys(channels_found))])
         print("Found channels:", channels_found)
 
 
