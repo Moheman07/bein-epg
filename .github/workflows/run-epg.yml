@@ -2,8 +2,8 @@ name: Run EPG Script Daily
 
 on:
   schedule:
-    - cron: '0 5 * * *'  # يومياً الساعة 5 صباحاً UTC
-  workflow_dispatch:      # لتشغيله يدويًا أيضاً
+    - cron: '0 12 * * *' # كل يوم الساعة 12 ظهراً UTC (تقدر تغيّرها)
+  workflow_dispatch:
 
 jobs:
   build:
@@ -11,25 +11,23 @@ jobs:
 
     steps:
     - name: Checkout repo
-      uses: actions/checkout@v3
+      uses: actions/checkout@v2
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v2
       with:
-        python-version: '3.11'
+        python-version: '3.x'
 
     - name: Install dependencies
-      run: |
-        pip install -r requirements.txt
+      run: pip install requests pytz
 
     - name: Run EPG script
-      run: |
-        python bein.py
+      run: python bein.py
 
     - name: Commit generated bein.xml
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         git add bein.xml
-        git commit -m "🤖 Update bein.xml [Auto]" || echo "No changes"
+        git commit -m "Update bein.xml" || echo "No changes to commit"
         git push
