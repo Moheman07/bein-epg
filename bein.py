@@ -4,17 +4,22 @@ import io
 import os
 import sys
 from datetime import datetime, timedelta
+import pytz
 
-EPG_ROOT = '.'  # مكان حفظ bein.xml في نفس مجلد السكربت
+EPG_ROOT = '.'  # مكان حفظ bein.xml
 
 print('**************BEIN SPORTS EPG******************')
 sys.stdout.flush()
 
-
 def bein():
     channels_found = []
-    for i in range(0, 3):
-        week = (datetime.today() + timedelta(days=i)).strftime('%Y-%m-%d')
+
+    # 🕐 التوقيت المحلي (مثال: الرياض)
+    local_timezone = pytz.timezone("Asia/Riyadh")
+    today = datetime.now(local_timezone)
+
+    for i in range(0, 3):  # ثلاث أيام قدام
+        week = (today + timedelta(days=i)).strftime('%Y-%m-%d')
         with requests.Session() as s:
             for idx in range(0, 4):
                 url = f'https://www.bein.com/ar/epg-ajax-template/?action=epg_fetch&category=sports&serviceidentity=bein.net&offset=00&mins=00&cdate={week}&language=AR&postid=25344&loadindex={idx}'
@@ -36,23 +41,24 @@ def bein():
                         desc.append(spl.group().replace('- ', '').replace('&', 'and'))
                     else:
                         desc.append(tit.replace('&', 'and'))
+
                 try:
                     for title_, form_, time_, ch, des, is_live in zip(title_chan, formt, times, channels, desc, live_events):
-                        date = re.search(r'\d{4}-\d{2}-\d{2}', url)
-                        starttime = datetime.strptime(date.group() + ' ' + time_[0], '%Y-%m-%d %H:%M').strftime('%Y%m%d%H%M%S')
-                        endtime = datetime.strptime(date.group() + ' ' + time_[1], '%Y-%m-%d %H:%M').strftime('%Y%m%d%H%M%S')
+                        date = week
+                        starttime = datetime.strptime(date + ' ' + time_[0], '%Y-%m-%d %H:%M').strftime('%Y%m%d%H%M%S')
+                        endtime = datetime.strptime(date + ' ' + time_[1], '%Y-%m-%d %H:%M').strftime('%Y%m%d%H%M%S')
                         live = "Live: " if is_live == "1" else ""
                         epg = ''
-                        epg += 2 * ' ' + f'<programme start="{starttime} +0300" stop="{endtime} +0300" channel="{ch.replace("_Digital_Mono", "").replace("_DIGITAL_Mono", "").replace("-1", "")}">\n'
+                        epg += 2 * ' ' + f'<programme start="{starttime} +0300" stop="{endtime} +0300" channel="{ch.replace("_Digital_Mono", "").replace("-1", "")}">\n'
                         epg += 4 * ' ' + f'<title lang="en">{live}{title_.replace("&", "and").strip()} - {form_.replace("2014", "2021")}</title>\n'
-                        epg += 4 * ' ' + f'<desc lang="ar">{des.replace("- ", "").replace("&", "and")}</desc>\n  </programme>\r'
+                        epg += 4 * ' ' + f'<desc lang="ar">{des}</desc>\n  </programme>\r'
                         with io.open(os.path.join(EPG_ROOT, 'bein.xml'), "a", encoding='UTF-8') as f:
                             f.write(epg)
                 except:
                     break
+
                 if len(title) != 0:
-                    dat = re.search(r'\d{4}-\d{2}-\d{2}', url)
-                    print('Date' + ' : ' + dat.group() + ' & Index : ' + str(idx))
+                    print(f'Date : {week} & Index : {idx}')
                     sys.stdout.flush()
                 else:
                     print('No data found')
@@ -62,10 +68,8 @@ def bein():
         channels_found = sorted([ch.replace('_Digital_Mono', '').replace('-1', '') for ch in list(dict.fromkeys(channels_found))])
         print("Found channels:", channels_found)
 
-
 def main():
     bein()
-
 
 if __name__ == '__main__':
     main()
